@@ -1,0 +1,6 @@
+{
+  "tokenFile": "token.json",
+  "tokenPath": "\\.credentials\\",
+  "storeTokenType": 2,
+  "storeTokenTypeInfo":"1:file;2:db;3:redis"
+}
