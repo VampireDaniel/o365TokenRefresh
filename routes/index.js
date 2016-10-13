@@ -16,17 +16,21 @@ var moment = require('moment');
 var path = require('path');
 var tokenUtil = require('../tokenUtil.js');
 var logger = require('../common/logger/logger').logger;
+var cipher = require('../common/authorizer/crypter.js');
 var schedule = require('node-schedule');
+
 
 /* GET home page. */
 router.get('/', function (req, res) {
-    // check for token
-    if (req.cookies.REFRESH_TOKEN_CACHE_KEY === undefined) {
-        res.redirect('login');
-    } else {
-        //redirect to search page
-        res.redirect('search');
-    }
+    res.redirect('login');
+
+    // // check for token
+    // if (req.cookies.REFRESH_TOKEN_CACHE_KEY === undefined) {
+    //     res.redirect('login');
+    // } else {
+    //     //redirect to search page
+    //     res.redirect('search');
+    // }
 });
 
 
@@ -44,7 +48,7 @@ router.get('/login', function (req, res) {
     //console.logs("url:"+req.originalUrl);
     //console.logs(req.query.code);
     if (req.query.code !== undefined) {
-        authHelper.getTokenFromCode(req.query.code, function (e, accessToken, refreshToken,results) {
+        authHelper.getTokenFromCode(req.query.code, function (e, accessToken, refreshToken, results) {
             if (e === null) {
                 // cache the refresh token in a cookie and go back to index
                 // res.cookie(authHelper.ACCESS_TOKEN_CACHE_KEY, accessToken);
@@ -68,72 +72,33 @@ router.get('/login', function (req, res) {
 });
 
 
-router.get('/search', function (req, res) {
-    var accessToken = '';
-    var refreshToken = '';
+router.get('/getTokenApi', function (req, res) {
+    if (req.query.timespan !== undefined) {
 
-    tokenUtil.getToken(function (err, token) {
+        var timespan = req.query.timespan;
+        var code = req.query.code;
 
-        if (err === null) {
-            accessToken = token.accessToken;
-            refreshToken = token.refreshToken;
-        }
-        else {
-            res.redirect('login');
-        }
-
-        if (req.query.querytext !== undefined) {
-            var searchText = '\'' + req.query.querytext + '\'';
-            requestUtil.getSearch(accessToken, searchText, function (err, result) {
-                if (err === null) {
-                    var elapsedTime = result.ElapsedTime;
-                    var table = result.PrimaryQueryResult.RelevantResults.Table;
+        cipher.authorize(timespan, function (err, result) {
+            if (err === null && result === code) {
+                tokenUtil.getToken(function (err, token) {
+                    logger.log('info', 'sb get token');
 
                     res.render(
-                        'search',
-                        {
-                            //strResult: JSON.stringify(table),
-                            result: table,
-                            elapsedTime: elapsedTime
-                        }
-                    );
+                        'getTokenApi', {token: JSON.stringify(token), layout: false}
+                    )
+                    ;
+                });
+            }
+            else {
+                if (err === null && result === false) {
+                    logger.log('error', 'unauthorized code');
                 }
                 else {
-                    if (err.code === '401') {
-
-                    }
-                    else {
-                        renderError(res, err);
-                    }
+                    logger.log('error', err);
                 }
-            });
-        }
-        else {
-            res.render('search');
-        }
-    })
-});
-
-
-router.get('/getTokenApi', function (req, res) {
-    if (req.query.code !== undefined) {
-
-            if (e === null) {
-                // cache the refresh token in a cookie and go back to index
-                // res.cookie(authHelper.ACCESS_TOKEN_CACHE_KEY, accessToken);
-                // res.cookie(authHelper.REFRESH_TOKEN_CACHE_KEY, refreshToken);
-
-                tokenUtil.storeToken(results, refreshToken, function (err) {
-                    if (err != null) {
-                    }
-                });
-
-                res.redirect('/');
-            } else {
-                console.log(JSON.parse(e.data).error_description);
-                res.status(500);
-                res.send();
             }
+        });
+
 
     } else {
         res.render('getTokenApi', {auth_url: authHelper.getAuthUrl()});
@@ -395,7 +360,6 @@ hbs.registerHelper('checkIsWorkId', function (key, value) {
 //
 // });
 
-
 // router.get('/properties', function (req, res) {
 //     if (req.query.querytext !== undefined) {
 //         var searchText = req.query.querytext + '&' + req.query.refiners;
@@ -422,6 +386,51 @@ hbs.registerHelper('checkIsWorkId', function (key, value) {
 //     else {
 //         res.render('properties');
 //     }
+// });
+// router.get('/search', function (req, res) {
+//     var accessToken = '';
+//     var refreshToken = '';
+//
+//     tokenUtil.getToken(function (err, token) {
+//
+//         if (err === null) {
+//             accessToken = token.accessToken;
+//             refreshToken = token.refreshToken;
+//         }
+//         else {
+//             res.redirect('login');
+//         }
+//
+//         if (req.query.querytext !== undefined) {
+//             var searchText = '\'' + req.query.querytext + '\'';
+//             requestUtil.getSearch(accessToken, searchText, function (err, result) {
+//                 if (err === null) {
+//                     var elapsedTime = result.ElapsedTime;
+//                     var table = result.PrimaryQueryResult.RelevantResults.Table;
+//
+//                     res.render(
+//                         'search',
+//                         {
+//                             //strResult: JSON.stringify(table),
+//                             result: table,
+//                             elapsedTime: elapsedTime
+//                         }
+//                     );
+//                 }
+//                 else {
+//                     if (err.code === '401') {
+//
+//                     }
+//                     else {
+//                         renderError(res, err);
+//                     }
+//                 }
+//             });
+//         }
+//         else {
+//             res.render('search');
+//         }
+//     })
 // });
 
 

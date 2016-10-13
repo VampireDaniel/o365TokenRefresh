@@ -11,7 +11,6 @@ var logger = require('./common/logger/logger').logger;
 var TOKEN_DIR = path.join(__dirname, appConfig.tokenPath);
 var TOKEN_PATH = TOKEN_DIR + tokenFileName;
 
-
 function storeToken(token, refreshToken, callback) {
 
     var now = moment();
@@ -77,8 +76,6 @@ function refreshStoredToken(token, refreshToken, callback) {
         storeToken(token, refreshToken, callback);
     }
 }
-
-
 
 function getToken(callback) {
     //file
